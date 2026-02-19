@@ -1,0 +1,10 @@
+services:
+  kiro-gateway:
+    build: .
+    image: kiro-gateway-local:latest
+    container_name: kiro-gateway
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8001:8000"

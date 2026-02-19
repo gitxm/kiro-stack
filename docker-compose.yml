@@ -1,0 +1,26 @@
+services:
+  kiro-gateway:
+    build: ./kiro-gateway
+    image: kiro-gateway-local:latest
+    container_name: kiro-gateway
+    restart: unless-stopped
+    env_file:
+      - ./kiro-gateway/.env
+    ports:
+      - "8001:8000"
+
+  kiro-go:
+    build: ./kiro-go
+    container_name: kiro-go
+    restart: unless-stopped
+    depends_on:
+      - kiro-gateway
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./kiro-go/data:/app/data
+    environment:
+      - CONFIG_PATH=/app/data/config.json
+      - ADMIN_PASSWORD=change_this_password
+      - KIRO_GATEWAY_BASE=http://kiro-gateway:8000
+      - KIRO_GATEWAY_API_KEY=change_this_api_key
