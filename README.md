@@ -61,93 +61,60 @@
 - Docker + Docker Compose
 - Kiro 账号（免费 / 付费均可）
 
-### 1. 克隆仓库
+### 三步启动
 
 ```bash
+# 1. 克隆仓库
 git clone https://github.com/your-username/kiro-stack.git
 cd kiro-stack
-```
 
-### 2. 配置 kiro-gateway
+# 2. 配置环境变量
+cp .env.example .env
+# 编辑 .env，修改以下两项：
+#   ADMIN_PASSWORD=你的管理面板密码
+#   INTERNAL_API_KEY=随机生成的密钥（用于内部通信）
 
-```bash
-cp kiro-gateway/.env.example kiro-gateway/.env
-```
-
-编辑 `kiro-gateway/.env`，至少配置 API Key（用于 kiro-go 调用鉴权）：
-
-```env
-# kiro-go 调用时使用的 API Key（自定义，需与 docker-compose.yml 保持一致）
-API_KEY=your_api_key_here
-```
-
-> 完整配置项参考 [kiro-gateway/README.md](kiro-gateway/README.md)
-
-### 3. 配置 docker-compose.yml
-
-编辑根目录 `docker-compose.yml`：
-
-```yaml
-services:
-  kiro-gateway:
-    ...
-    env_file:
-      - ./kiro-gateway/.env
-    ports:
-      - "8001:8000"   # gateway 内部端口，不对外暴露也可
-
-  kiro-go:
-    ...
-    environment:
-      - ADMIN_PASSWORD=your_admin_password   # Web 管理面板密码
-      - KIRO_GATEWAY_BASE=http://kiro-gateway:8000
-      - KIRO_GATEWAY_API_KEY=your_api_key_here   # 需与 gateway API_KEY 一致
-    ports:
-      - "8088:8080"   # 对外暴露端口
-```
-
-### 4. 启动服务
-
-```bash
+# 3. 启动服务
 docker compose up -d
 ```
 
-### 5. 添加账号
+### 添加账号并使用
 
 1. 打开 `http://localhost:8088/admin`
-2. 输入 `ADMIN_PASSWORD` 登录
+2. 使用 `ADMIN_PASSWORD` 登录
 3. 添加 Kiro 账号（支持 AWS Builder ID / IAM SSO / SSO Token 等方式）
-
-### 6. 使用 API
-
-将客户端的 base URL 设为 `http://localhost:8088`，无需 API Key（或按面板配置）。
+4. 将客户端的 base URL 设为 `http://localhost:8088`
 
 ```bash
 # OpenAI 兼容
 curl http://localhost:8088/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "claude-sonnet-4-5", "messages": [{"role": "user", "content": "Hello"}], "stream": true}'
+  -d '{"model": "claude-sonnet-4.5", "messages": [{"role": "user", "content": "Hello"}]}'
 
 # Anthropic 兼容
 curl http://localhost:8088/v1/messages \
   -H "Content-Type: application/json" \
-  -d '{"model": "claude-sonnet-4-5", "max_tokens": 1024, "messages": [{"role": "user", "content": "Hello"}]}'
+  -d '{"model": "claude-sonnet-4.5", "max_tokens": 1024, "messages": [{"role": "user", "content": "Hello"}]}'
 ```
+
+> **说明：** 账号凭证由 kiro-go 管理，请求时自动转发给 kiro-gateway，无需在 gateway 单独配置 token。
 
 ---
 
 ## 支持的模型
 
-模型可用性取决于你的 Kiro 订阅等级，以下为常见免费模型：
+模型可用性取决于你的 Kiro 订阅等级，以下为常见模型：
 
 | 模型 | 说明 |
 |------|------|
-| `claude-sonnet-4-5` | 均衡性能，适合编程、写作等通用任务 |
-| `claude-haiku-4-5` | 极速响应，适合简单任务 |
+| `claude-sonnet-4.6` | 最新旗舰模型（2026年2月发布） |
+| `claude-opus-4.6` | 最强推理模型（2026年2月发布） |
+| `claude-sonnet-4.5` | 均衡性能，适合编程、写作等通用任务 |
+| `claude-haiku-4.5` | 极速响应，适合简单任务 |
 | `claude-sonnet-4` | 上一代，稳定可靠 |
-| `claude-3-7-sonnet` | 旧版，向后兼容 |
-| `deepseek-v3-2` | 开源 MoE（685B/37B active），均衡 |
-| `minimax-m2-1` | 开源 MoE（230B/10B active），适合复杂任务 |
+| `claude-3.7-sonnet` | 旧版，向后兼容 |
+| `deepseek-v3.2` | 开源 MoE（685B/37B active），均衡 |
+| `minimax-m2.1` | 开源 MoE（230B/10B active），适合复杂任务 |
 | `qwen3-coder-next` | 开源 MoE（80B/3B active），代码专项 |
 
 模型名称支持多种格式，如 `claude-sonnet-4.5` / `claude-sonnet-4-5` / `claude-sonnet-4-5-20250929` 均可正常解析。
@@ -156,25 +123,35 @@ curl http://localhost:8088/v1/messages \
 
 ## 配置说明
 
-### kiro-go 环境变量
+### 环境变量（.env 文件）
 
-| 变量 | 说明 | 默认值 |
-|---|---|---|
-| `ADMIN_PASSWORD` | Web 管理面板密码 | - |
-| `CONFIG_PATH` | 配置文件路径 | `data/config.json` |
-| `KIRO_GATEWAY_BASE` | kiro-gateway 地址，设置后请求走 gateway | 空（直连 Kiro API） |
-| `KIRO_GATEWAY_API_KEY` | 调用 gateway 的鉴权 Key | 空 |
+所有配置都在根目录的 `.env` 文件中：
 
-### kiro-gateway 主要环境变量
+| 变量 | 说明 | 必填 |
+|------|------|------|
+| `ADMIN_PASSWORD` | Web 管理面板密码 | ✅ 是 |
+| `INTERNAL_API_KEY` | kiro-go 和 kiro-gateway 之间的通信密钥 | ✅ 是 |
+| `VPN_PROXY_URL` | HTTP/SOCKS5 代理（如有网络限制） | ❌ 否 |
+| `DEBUG_MODE` | 调试模式：`off`（默认）/ `errors` / `all` | ❌ 否 |
 
-详见 [kiro-gateway/README.md](kiro-gateway/README.md)，常用项：
+**说明：**
+- `ADMIN_PASSWORD`：用于登录 Web 管理面板
+- `INTERNAL_API_KEY`：两个服务之间的内部鉴权，随机生成即可（如 `openssl rand -hex 32`）
+- `VPN_PROXY_URL`：如果在中国或有网络限制，配置代理地址（如 `http://127.0.0.1:7890`）
+- `DEBUG_MODE`：生产环境建议 `off`，排查问题时可设为 `errors`
 
-| 变量 | 说明 |
-|---|---|
-| `API_KEY` | API 访问密钥 |
-| `PROXY_URL` | HTTP/SOCKS5 代理（如有网络限制） |
-| `MAX_RETRIES` | 最大重试次数 |
-| `RETRY_DELAY` | 重试间隔（秒） |
+### 账号管理
+
+所有 Kiro 账号通过 Web 管理面板添加和管理：
+1. 访问 `http://localhost:8088/admin`
+2. 使用 `ADMIN_PASSWORD` 登录
+3. 点击"添加账号"，支持多种方式：
+   - AWS Builder ID（个人账号）
+   - IAM Identity Center（企业 SSO）
+   - SSO Token（从浏览器导入）
+   - 本地缓存（从 Kiro IDE 导入）
+
+**无需在 kiro-gateway 配置 token**，所有账号凭证由 kiro-go 管理，请求时自动转发。
 
 ---
 
