@@ -208,10 +208,17 @@ def validate_configuration() -> None:
     Checks:
     - Either REFRESH_TOKEN, KIRO_CREDS_FILE, or KIRO_CLI_DB_FILE is configured
     - Supports both .env file (local) and environment variables (Docker)
+    - When SKIP_STARTUP_CREDENTIAL_CHECK=true, skips credential check
+      (used in kiro-stack integrated mode where credentials come from kiro-go headers)
     
     Raises:
         SystemExit: If critical configuration is missing
     """
+    # 集成模式：凭证由 kiro-go 通过 X-Kiro-* 请求头动态传入，无需启动时校验
+    if os.getenv("SKIP_STARTUP_CREDENTIAL_CHECK", "").lower() in ("true", "1", "yes"):
+        logger.info("SKIP_STARTUP_CREDENTIAL_CHECK=true，跳过凭证校验（集成模式：凭证由请求头传入）")
+        return
+
     errors = []
     
     # Check if .env file exists (optional - can use environment variables)
