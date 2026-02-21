@@ -119,6 +119,18 @@ curl http://localhost:8088/v1/messages \
 
 模型名称支持多种格式，如 `claude-sonnet-4.5` / `claude-sonnet-4-5` / `claude-sonnet-4-5-20250929` 均可正常解析。
 
+> **⚠️ 关于 `claude-sonnet-4.6` / `claude-opus-4.6` 无法使用的说明**
+>
+> 这两个模型目前处于**小范围灰度开放**阶段，Kiro API 对无权限的请求会返回 HTTP 429，
+> 与普通「限流」使用相同的状态码，因此日志中会看到 `Streaming failed after 3 attempts` 的报错。
+>
+> **原因并非代码 Bug，而是你的 Kiro 账号/Region 尚未获得该模型的访问权限。**
+>
+> 排查步骤：
+> 1. 先用 `claude-sonnet-4.5` 发一条测试请求，若成功则账号和链路均正常
+> 2. 等待 AWS 对你的账号开放 4.6 模型（通常随 Kiro IDE 版本升级逐步推送）
+> 3. 开放后无需任何配置变更，直接使用即可
+
 ---
 
 ## 配置说明
@@ -177,6 +189,25 @@ kiro-stack/
 ---
 
 ## 更新日志
+
+### `feature/simplify-config-and-add-4.6-models`
+
+**配置简化：**
+- 整合部署只需配置**根目录一个 `.env` 文件**，不再需要单独维护 `kiro-gateway/.env`
+- 账号凭证（Refresh Token 等）完全通过 kiro-go Web 管理面板管理，kiro-go 转发请求时自动通过 `X-Kiro-*` HTTP 头传递给 gateway
+- `kiro-gateway/.env.example` 更新注释，明确标注仅独立部署时才需要此文件
+
+**新增模型支持：**
+- 在 gateway 内置 fallback 模型列表中添加 `claude-sonnet-4.6`、`claude-opus-4.6`、`claude-opus-4.6-1m`
+
+**集成模式启动修复：**
+- 新增 `SKIP_STARTUP_CREDENTIAL_CHECK=true` 环境变量（已在 `docker-compose.yml` 中预设）
+- 修复集成部署时 kiro-gateway 因找不到本地静态凭证而无法启动的问题（凭证由请求头动态传入，无需启动时校验）
+
+**日志改进：**
+- 429 错误日志现在会附带 Kiro API 返回的响应体，便于判断是真正限流还是模型无权限
+
+---
 
 ### 相比原版的改动
 

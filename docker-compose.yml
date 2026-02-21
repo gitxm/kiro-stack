@@ -8,6 +8,7 @@ services:
       - PROXY_API_KEY=${INTERNAL_API_KEY}
       - VPN_PROXY_URL=${VPN_PROXY_URL:-}
       - DEBUG_MODE=${DEBUG_MODE:-off}
+      - SKIP_STARTUP_CREDENTIAL_CHECK=true
     ports:
       - "8001:8000"
 
