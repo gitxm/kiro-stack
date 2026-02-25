@@ -234,7 +234,12 @@ class KiroHttpClient:
                 # 429 - rate limit, wait and retry
                 if response.status_code == 429:
                     delay = BASE_RETRY_DELAY * (2 ** attempt)
-                    logger.warning(f"Received 429, waiting {delay}s (attempt {attempt + 1}/{MAX_RETRIES})")
+                    try:
+                        await response.aread()
+                        _body = response.text[:500]
+                    except Exception:
+                        _body = "<无法读取响应体>"
+                    logger.warning(f"Received 429, waiting {delay}s (attempt {attempt + 1}/{MAX_RETRIES}) | body: {_body}")
                     await asyncio.sleep(delay)
                     continue
                 
